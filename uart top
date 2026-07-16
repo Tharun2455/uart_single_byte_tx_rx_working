@@ -1,0 +1,83 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+entity uart_loopback_top is
+    Port
+    (
+        i_Clk   : in  std_logic;      -- 100 MHz Clock
+        uart_rx : in  std_logic;
+        uart_tx : out std_logic;
+        led_verify  :out std_logic
+    );
+end uart_loopback_top;
+
+architecture Behavioral of uart_loopback_top is
+COMPONENT ila_0
+
+PORT (
+	clk : IN STD_LOGIC;
+
+
+
+	probe0 : IN STD_LOGIC; 
+	probe1 : IN STD_LOGIc; 
+	probe2 : IN STD_LOGIC_VECTOR(7 DOWNTO 0); 
+	probe3 : IN STD_LOGIc;
+	probe4 : IN STD_LOGIC
+);
+END COMPONENT  ;
+    signal rx_dv      : std_logic;
+    signal rx_byte    : std_logic_vector(7 downto 0);
+
+    signal tx_active  : std_logic;
+    signal tx_done    : std_logic;
+
+begin
+
+-------------------------------------------------------
+-- UART Receiver
+-------------------------------------------------------
+UART_RX_INST : entity work.UART_RX
+generic map
+(
+    g_CLKS_PER_BIT => 10417
+)
+port map
+(
+    i_Clk       => i_Clk,
+    i_RX_Serial => uart_rx,
+    o_RX_DV     => rx_dv,
+    o_RX_Byte   => rx_byte
+);
+led_verify<=rx_dv;
+-------------------------------------------------------
+-- UART Transmitter
+-------------------------------------------------------
+UART_TX_INST : entity work.UART_TX
+generic map
+(
+    g_CLKS_PER_BIT => 10417
+)
+port map
+(
+    i_Clk       => i_Clk,
+    i_TX_DV     => rx_dv,
+    i_TX_Byte   => rx_byte,
+    o_TX_Active => tx_active,
+    o_TX_Serial => uart_tx,
+    o_TX_Done   => tx_done
+);
+
+
+ILA_INST : ila_0
+port map
+(
+    clk    => i_Clk,
+
+    probe0 => uart_rx,
+    probe1 => rx_dv,
+    probe2 => rx_byte,
+    probe3 => tx_active,
+    probe4 => tx_done
+);
+end Behavioral;
